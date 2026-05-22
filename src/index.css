@@ -1,0 +1,440 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DESIGN TOKENS — Apple × Anthropic
+   ============================================================ */
+@theme {
+  /* Surfaces */
+  --color-base:    var(--base);
+  --color-card:    var(--card);
+  --color-raised:  var(--raised);
+  --color-input:   var(--input);
+
+  /* Borders */
+  --color-edge:    var(--edge);
+  --color-edge-hi: var(--edge-hi);
+
+  /* Text */
+  --color-ink:   var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+
+  /* Amber */
+  --color-amber:       var(--amber);
+  --color-amber-wash:  var(--amber-wash);
+
+  /* Emerald */
+  --color-emerald:      var(--emerald);
+  --color-emerald-wash: var(--emerald-wash);
+
+  /* Rose */
+  --color-rose:      var(--rose);
+  --color-rose-wash: var(--rose-wash);
+
+  /* Indigo */
+  --color-indigo:      var(--indigo);
+  --color-indigo-wash: var(--indigo-wash);
+
+  /* Extra */
+  --color-violet: var(--violet);
+  --color-sky:    var(--sky);
+  --color-cyan:   var(--cyan);
+
+  /* Fonts */
+  --font-sans:  "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono:  "JetBrains Mono", "SF Mono", monospace;
+  --font-serif: "Instrument Serif", Georgia, serif;
+}
+
+/* ============================================================
+   LIGHT MODE — Brutalist Command Center
+   ============================================================ */
+:root {
+  --base:    #F4F4F5; /* zinc-100 */
+  --card:    #FFFFFF;
+  --raised:  #E4E4E7; /* zinc-200 */
+  --input:   #D4D4D8; /* zinc-300 */
+  --edge:    #09090B; /* zinc-950 - strict bold borders */
+  --edge-hi: #09090B;
+
+  --ink:   #09090B;
+  --ink-2: #27272A;
+  --ink-3: #52525B;
+
+  --shadow-card:  none;
+  --shadow-hover: 4px 4px 0px 0px rgba(9, 9, 11, 1);
+  --shadow-float: 8px 8px 0px 0px rgba(9, 9, 11, 1);
+
+  --amber:        #92400E;
+  --amber-wash:   rgba(146, 64, 14, 0.08);
+  --amber-edge:   rgba(146, 64, 14, 0.18);
+
+  --emerald:      #065F46;
+  --emerald-wash: rgba(6, 95, 70, 0.08);
+  --emerald-edge: rgba(6, 95, 70, 0.18);
+
+  --rose:         #9F1239;
+  --rose-wash:    rgba(159, 18, 57, 0.08);
+  --rose-edge:    rgba(159, 18, 57, 0.18);
+
+  --indigo:       #3730A3;
+  --indigo-wash:  rgba(55, 48, 163, 0.07);
+  --indigo-edge:  rgba(55, 48, 163, 0.16);
+
+  --violet: #5B21B6;
+  --sky:    #0369A1;
+  --cyan:   #0E7490;
+}
+
+/* ============================================================
+   NIGHT MODE — Deep Brutalist
+   ============================================================ */
+.night {
+  --base:    #09090B; /* zinc-950 */
+  --card:    #09090B;
+  --raised:  #18181B; /* zinc-900 */
+  --input:   #27272A; /* zinc-800 */
+  --edge:    #52525B; /* zinc-600 */
+  --edge-hi: #A1A1AA; /* zinc-400 */
+
+  --ink:   #FAFAFA;
+  --ink-2: #A1A1AA;
+  --ink-3: #71717A;
+
+  --shadow-card:  none;
+  --shadow-hover: 4px 4px 0px 0px rgba(82, 82, 91, 1);
+  --shadow-float: 8px 8px 0px 0px rgba(82, 82, 91, 1);
+
+  --amber:        #F59E0B;
+  --amber-wash:   rgba(245, 158, 11, 0.12);
+  --amber-edge:   rgba(245, 158, 11, 0.22);
+
+  --emerald:      #10B981;
+  --emerald-wash: rgba(16, 185, 129, 0.10);
+  --emerald-edge: rgba(16, 185, 129, 0.22);
+
+  --rose:         #FB7185;
+  --rose-wash:    rgba(251, 113, 133, 0.10);
+  --rose-edge:    rgba(251, 113, 133, 0.22);
+
+  --indigo:       #818CF8;
+  --indigo-wash:  rgba(129, 140, 248, 0.10);
+  --indigo-edge:  rgba(129, 140, 248, 0.22);
+
+  --violet: #A78BFA;
+  --sky:    #38BDF8;
+  --cyan:   #22D3EE;
+}
+
+/* ============================================================
+   BASE RESET & GLOBAL
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--base);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+/* Input number — hide spin buttons */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* ============================================================
+   SMOOTH THEME TRANSITIONS
+   ============================================================ */
+*, *::before, *::after {
+  transition:
+    background-color 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease,
+    filter 0.35s ease;
+}
+
+/* Don't transition transforms/opacity for animations */
+.no-theme-transition {
+  transition: none !important;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--edge-hi);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+
+/* ============================================================
+   CARD
+   ============================================================ */
+.card {
+  background: var(--card);
+  border: 2px solid var(--edge);
+  border-radius: 0px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-interactive {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+.card-interactive:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   LABEL / SECTION HEADING
+   ============================================================ */
+.section-label {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* ============================================================
+   PILL BADGE
+   ============================================================ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 0px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 2px solid transparent;
+}
+
+.pill-amber   { background: var(--amber-wash);   color: var(--amber);   border-color: var(--amber-edge); }
+.pill-emerald { background: var(--emerald-wash); color: var(--emerald); border-color: var(--emerald-edge); }
+.pill-rose    { background: var(--rose-wash);    color: var(--rose);    border-color: var(--rose-edge); }
+.pill-indigo  { background: var(--indigo-wash);  color: var(--indigo);  border-color: var(--indigo-edge); }
+.pill-neutral {
+  background: var(--raised);
+  color: var(--ink-2);
+  border-color: var(--edge);
+}
+
+/* ============================================================
+   ICON BUTTON
+   ============================================================ */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0px;
+  border: 2px solid var(--edge);
+  background: var(--raised);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease !important;
+}
+.icon-btn:hover {
+  background: var(--input);
+  color: var(--ink);
+}
+.icon-btn:active { transform: scale(0.92); }
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+.field {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 0px;
+  border: 2px solid var(--edge);
+  background: var(--input);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+.field::placeholder { color: var(--ink-3); }
+.field:focus {
+  border-color: var(--amber-edge);
+  box-shadow: 0 0 0 3px var(--amber-wash);
+}
+
+/* ============================================================
+   BTN PRIMARY
+   ============================================================ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 0px;
+  background: var(--ink);
+  color: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+.btn-primary:hover   { opacity: 0.88; }
+.btn-primary:active  { transform: scale(0.97); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 0px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  border: 2px solid var(--edge);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+.btn-ghost:hover { background: var(--raised); color: var(--ink); }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position: 200% center; }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-fade-up     { animation: fadeUp   0.4s ease both; }
+.animate-fade-in     { animation: fadeIn   0.3s ease both; }
+.animate-scale-in    { animation: scaleIn  0.25s ease both; }
+.animate-pulse-dot   { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* Stagger helpers */
+.delay-1  { animation-delay: 0.05s; }
+.delay-2  { animation-delay: 0.1s; }
+.delay-3  { animation-delay: 0.15s; }
+.delay-4  { animation-delay: 0.2s; }
+.delay-5  { animation-delay: 0.25s; }
+
+/* ============================================================
+   SKELETON SHIMMER
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--raised) 25%,
+    var(--input)  50%,
+    var(--raised) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   TODAY TIMELINE — specific styles
+   ============================================================ */
+.now-block {
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--amber-edge);
+  background: var(--amber-wash);
+  position: relative;
+  overflow: hidden;
+}
+.now-block::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--amber);
+  border-radius: 999px;
+}
+
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease !important;
+}
+.schedule-row:hover { background: var(--raised); }
+.schedule-row.past  { opacity: 0.4; }
+
+/* ============================================================
+   UTILITY — hide scrollbar but keep scrollability
+   ============================================================ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   NIGHT MODE — body background
+   ============================================================ */
+html.night, html.night body {
+  background-color: var(--base);
+}
+
+/* ============================================================
+   INLINE COLOR SHORTCUTS  (used via style={{color:'var(--x)'}})
+   These are referenced as Tailwind-style classes in JSX
+   but must be defined here since they use CSS vars.
+   ============================================================ */
+.text-violet { color: var(--violet) !important; }
+.text-sky    { color: var(--sky)    !important; }
+.text-cyan   { color: var(--cyan)   !important; }
+.text-indigo { color: var(--indigo) !important; }
+.text-amber  { color: var(--amber)  !important; }
+.text-emerald{ color: var(--emerald)!important; }
+.text-rose   { color: var(--rose)   !important; }
+
+.bg-indigo  { background-color: var(--indigo)  !important; }
+.bg-amber   { background-color: var(--amber)   !important; }
+.bg-emerald { background-color: var(--emerald) !important; }
+.bg-rose    { background-color: var(--rose)    !important; }
+.bg-violet  { background-color: var(--violet)  !important; }
