@@ -1,0 +1,6 @@
+name = "tycodesapp"
+compatibility_date = "2025-05-23"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
