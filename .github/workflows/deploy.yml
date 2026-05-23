@@ -30,6 +30,11 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_OAUTH_SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets"
+          VITE_BIBLE_API_URL: "https://bible-api.com"
+          VITE_GOOGLE_APPS_SCRIPT_URL: ${{ secrets.VITE_GOOGLE_APPS_SCRIPT_URL }}
 
       - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy
