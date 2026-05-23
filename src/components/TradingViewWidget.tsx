@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { syncPortfolioToSheet, fetchPortfolioPrices } from '../lib/sheetsApi';
+import { syncPortfolioToSheet, fetchPortfolioData } from '../lib/sheetsApi';
 
 const LS_TICKERS = 'tycodes_portfolio_v2';
 
@@ -64,17 +64,18 @@ export default function TradingViewWidget() {
     container.current.appendChild(script);
   }, [assets]);
 
-  // Fetch Live Prices via Google Sheets
+  // Fetch Live Prices & Holdings via Google Sheets
   useEffect(() => {
     let isMounted = true;
 
     async function fetchPrices() {
-      const activeTickers = assets.filter(a => a.shares && a.cost && a.ticker);
-      if (activeTickers.length === 0) return;
-
-      const p = await fetchPortfolioPrices();
-      if (p && isMounted) {
-        setPrices(p);
+      const data = await fetchPortfolioData();
+      if (data && isMounted) {
+        setPrices(data.prices);
+        // Only override local storage if the sheet isn't completely empty,
+        // or if they've successfully connected (we know it's not a generic error).
+        // Even if empty, if the sheet fetch worked, it means the sheet is the source of truth.
+        setAssets(data.holdings);
       }
     }
 

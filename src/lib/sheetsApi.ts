@@ -50,17 +50,24 @@ export async function fetchDashboardData() {
     const backlogRows = data.valueRanges[1].values || [];
     const metricsRows = data.valueRanges[2].values || [];
 
-    const schedule = scheduleRows.map((r: any) => ({
-      StartTime: r[0] || '', EndTime: r[1] || '', TaskName: r[2] || '', Color: r[3] || '#6366f1' // fallback color
-    }));
+    const schedule = scheduleRows
+      .filter((r: any) => r && r[0] && r[2]) // Must have start time and name
+      .map((r: any) => ({
+        StartTime: r[0] || '', EndTime: r[1] || '', TaskName: r[2] || '', Color: r[3] || '#6366f1' // fallback color
+      }));
 
-    const backlog = backlogRows.map((r: any) => ({
-      TaskName: r[0] || '', Status: r[1] || 'pending', Timestamp: r[2] || ''
-    }));
+    const backlog = backlogRows
+      .filter((r: any) => r && r[0]) // Must have task name
+      .map((r: any, i: number) => ({
+        id: `sheet-${i}-${Date.now()}`,
+        TaskName: r[0] || '', Status: r[1] || 'pending', Timestamp: r[2] || new Date().toISOString()
+      }));
 
     const metrics: Record<string, number> = {};
     metricsRows.forEach((r: any) => {
-      metrics[r[0]] = parseFloat(r[1]) || 0;
+      if (r && r[0]) {
+        metrics[r[0]] = parseFloat(r[1]) || 0;
+      }
     });
 
     return { schedule, backlog, metrics, status: 'ok', timestamp: new Date().toISOString() };
@@ -312,8 +319,8 @@ export async function syncPortfolioToSheet(
   }
 }
 
-/** Fetches evaluated live prices from the Portfolio sheet */
-export async function fetchPortfolioPrices(): Promise<Record<string, number> | null> {
+/** Fetches portfolio holdings and evaluated live prices from the Portfolio sheet */
+export async function fetchPortfolioData(): Promise<{ holdings: Array<{id: string, ticker: string, shares: string, cost: string}>, prices: Record<string, number> } | null> {
   const sheetId = getSheetId();
   if (!sheetId) return null;
   const token = await getToken();
@@ -327,18 +334,33 @@ export async function fetchPortfolioPrices(): Promise<Record<string, number> | n
     const data = await res.json();
     const rows = data.values || [];
     
+    const holdings = [];
     const prices: Record<string, number> = {};
-    for (const r of rows) {
-      const ticker = r[0];
+    
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !r[0] || String(r[0]).trim() === '') continue;
+      
+      const ticker = String(r[0]).trim();
+      const shares = r[1] != null ? String(r[1]) : '';
+      const cost = r[2] != null ? String(r[2]) : '';
+      
+      holdings.push({
+        id: `portfolio-${i}-${Date.now()}`,
+        ticker,
+        shares,
+        cost
+      });
+      
       const rawPrice = r[3];
-      // Skip N/A or missing prices (GOOGLEFINANCE couldn't resolve the ticker)
-      if (!ticker || rawPrice === 'N/A' || rawPrice === undefined) continue;
-      const price = parseFloat(rawPrice);
-      if (!isNaN(price)) {
-        prices[ticker] = price;
+      if (rawPrice !== 'N/A' && rawPrice !== undefined) {
+        const price = parseFloat(rawPrice);
+        if (!isNaN(price)) {
+          prices[ticker] = price;
+        }
       }
     }
-    return prices;
+    return { holdings, prices };
   } catch {
     return null;
   }
