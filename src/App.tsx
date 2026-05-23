@@ -1,260 +1,224 @@
-import { useState, useEffect, useCallback } from 'react';
-import TimelineBar from './components/TimelineBar';
+import { useState, useEffect } from 'react';
+import { Responsive as ResponsiveGridLayout, WidthProvider } from 'react-grid-layout/legacy';
 import AccountabilityBacklog from './components/AccountabilityBacklog';
-import TradingViewWidget from './components/TradingViewWidget';
 import DailyScripture from './components/DailyScripture';
-import AmbientVideo from './components/AmbientVideo';
-import QuickNotes from './components/QuickNotes';
-import TaskQueue from './components/TaskQueue';
-import TVMode from './components/TVMode';
+import TimelineBar from './components/TimelineBar';
+import TradingViewWidget from './components/TradingViewWidget';
 import SettingsPanel from './components/SettingsPanel';
-import type { DashboardData, BacklogTask } from './types';
-import { getSheetId, setSheetId, fetchDashboardData } from './lib/sheetsApi';
+import AmbientVideo from './components/AmbientVideo';
+import TaskQueue from './components/TaskQueue';
+import QuickNotes from './components/QuickNotes';
+import { mockBacklog, mockMetrics, mockSchedule } from './data/mockData';
 import { initGoogleAuth } from './lib/googleAuth';
-import { provisionDashboardSheet } from './lib/sheetsProvisioner';
+import { getSheetId, fetchDashboardData, updateSchedule } from './lib/sheetsApi';
 
-// ── LocalStorage keys ─────────────────────────────────────
-const LS_YOUTUBE   = 'ar_youtube_url';
-const LS_BACKLOG   = 'ar_backlog';
-const DEFAULT_YT   = 'https://www.youtube.com/watch?v=jfKfPfyJRdk';
+const ResponsiveRGL = WidthProvider(ResponsiveGridLayout);
+const LS_LAYOUT = 'tycodes_layout_v1';
 
-function ls<T>(key: string, fallback: T): T {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-  catch { return fallback; }
-}
+const DEFAULT_LAYOUT: any[] = [
+  { i: 'timeline', x: 0, y: 0, w: 12, h: 3 },
+  { i: 'backlog', x: 0, y: 3, w: 4, h: 4 },
+  { i: 'queue', x: 0, y: 7, w: 4, h: 4 },
+  { i: 'watchlist', x: 4, y: 3, w: 4, h: 5 },
+  { i: 'notes', x: 4, y: 8, w: 4, h: 3 },
+  { i: 'scripture', x: 8, y: 3, w: 4, h: 3 },
+  { i: 'ambient', x: 8, y: 6, w: 4, h: 5 }
+];
 
-// ── Status pill ───────────────────────────────────────────
-
-
-// ── App ───────────────────────────────────────────────────
 export default function App() {
-
-  // ── Dashboard data ─────────────────────────────────────
-  const [data, setData] = useState<DashboardData>({
-    schedule:  [],
-    backlog:   ls<BacklogTask[]>(LS_BACKLOG, []),
-    metrics:   { unsorted_files: 0, unsorted_notes: 0 },
-    status:    'demo',
-    timestamp: new Date().toISOString(),
-  });
-  
-  const [hasSheet, setHasSheet] = useState<boolean>(!!getSheetId());
-  const [isProvisioning, setIsProvisioning] = useState(false);
-
-  // ── Clock ──────────────────────────────────────────────
-  const [time, setTime] = useState(new Date());
-
-  // ── Night mode ─────────────────────────────────────────
-  const [isNight, setIsNight] = useState<boolean>(() => {
-    const h = new Date().getHours();
-    return h >= 19 || h < 8;
-  });
-
-  // ── Ambient video ──────────────────────────────────────
-  const [youtubeUrl, setYoutubeUrl] = useState<string>(() => {
-    try { return localStorage.getItem(LS_YOUTUBE) || DEFAULT_YT; } catch { return DEFAULT_YT; }
-  });
-  const showVideo = true;
-
-  // ── UI panels ──────────────────────────────────────────
+  const isConnected = !!getSheetId();
+  const [data, setData] = useState(
+    isConnected
+      ? { backlog: [] as any[], metrics: {} as any, schedule: [] as any[] }
+      : { backlog: mockBacklog, metrics: mockMetrics, schedule: mockSchedule }
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [tvMode, setTvMode]             = useState(false);
+  // Lofi Girl channel ID - always points to their live stream regardless of rotating video IDs
+  const [youtubeUrl, setYoutubeUrl] = useState('UCSJ4gkVC6NrvII8umztf0Ow');
+  const [showVideo, setShowVideo] = useState(true);
+  
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem('tycodes_theme') !== 'light';
+  });
 
-  // ── Effects ────────────────────────────────────────────
-
+  // Bootloader
   useEffect(() => {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const scopes = import.meta.env.VITE_GOOGLE_OAUTH_SCOPES;
-      if (clientId && scopes) {
-        initGoogleAuth(clientId, scopes);
-      } else {
-        console.error('VITE_GOOGLE_CLIENT_ID or VITE_GOOGLE_OAUTH_SCOPES missing in .env');
-      }
+    initGoogleAuth(
+      import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      import.meta.env.VITE_GOOGLE_OAUTH_SCOPES
+    );
+
+    if (getSheetId()) {
+      fetchDashboardData().then(d => {
+        if (d) {
+          // Always update from sheet - don't fall back to mock data
+          setData({ backlog: d.backlog, metrics: d.metrics as any, schedule: d.schedule });
+        } else {
+          // Fetch failed (auth/network). Keep showing empty state if connected.
+          console.warn('Failed to fetch dashboard data from sheet');
+        }
+      });
+    }
   }, []);
 
-  // Apply night mode to both root div AND document (for full-page bg + modals)
   useEffect(() => {
-    document.documentElement.classList.toggle('night', isNight);
-    document.body.style.backgroundColor = isNight ? 'var(--base)' : '';
-  }, [isNight]);
-
-  // Clock tick + auto night/day at 8am / 7pm
-  useEffect(() => {
-    const t = setInterval(() => {
-      const now = new Date();
-      setTime(now);
-      const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-      if (m === 0 && s === 0) {
-        if (h === 19) setIsNight(true);
-        if (h === 8)  setIsNight(false);
-      }
-    }, 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  // Persist backlog
-  useEffect(() => {
-    try { localStorage.setItem(LS_BACKLOG, JSON.stringify(data.backlog)); } catch { /* ignore */ }
-  }, [data.backlog]);
-
-  // Persist YouTube URL
-  useEffect(() => {
-    try { localStorage.setItem(LS_YOUTUBE, youtubeUrl); } catch { /* ignore */ }
-  }, [youtubeUrl]);
-
-  // TV mode fullscreen request
-  useEffect(() => {
-    if (tvMode) {
-      document.documentElement.requestFullscreen?.().catch(() => {/* ignore */});
+    if (isDark) {
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('tycodes_theme', 'dark');
     } else {
-      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {/* ignore */});
+      document.documentElement.classList.add('light');
+      localStorage.setItem('tycodes_theme', 'light');
     }
-  }, [tvMode]);
+  }, [isDark]);
 
-  // ── Data fetching ──────────────────────────────────────
-  const fetchDashboard = useCallback(async () => {
-    if (!hasSheet) return;
+  // Layout State
+  const [layouts, setLayouts] = useState<any>(() => {
     try {
-      const result = await fetchDashboardData();
-      if (result && result.status === 'ok') {
-        setData(prev => ({
-          ...prev,
-          schedule:  Array.isArray(result.schedule) ? result.schedule.map((b: any, i: number) => ({ ...b, id: b.id ?? `s${i}` })) : prev.schedule,
-          backlog:   Array.isArray(result.backlog)  ? result.backlog.map((b: any, i: number) => ({ ...b, id: b.id ?? `bl${i}` })) : prev.backlog,
-          metrics:   (result.metrics && typeof result.metrics === 'object') ? (result.metrics as any) : prev.metrics,
-          status:    'ok',
-          timestamp: result.timestamp || new Date().toISOString(),
-        }));
-      }
-    } catch {
-      // Handle error implicitly
+      const saved = localStorage.getItem(LS_LAYOUT);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { lg: DEFAULT_LAYOUT, md: DEFAULT_LAYOUT, sm: DEFAULT_LAYOUT };
+  });
+
+  const setBacklog = (newBacklog: any) => setData(prev => ({ ...prev, backlog: newBacklog }));
+
+  const handleScheduleChange = async (newSchedule: any[]) => {
+    setData(prev => ({ ...prev, schedule: newSchedule }));
+    if (getSheetId()) {
+      await updateSchedule(newSchedule);
     }
-  }, [hasSheet]);
+  };
 
-  useEffect(() => {
-    fetchDashboard();
-    const poll = setInterval(fetchDashboard, 300_000);
-    return () => clearInterval(poll);
-  }, [fetchDashboard]);
+  const handleLayoutChange = (_layout: any, allLayouts: any) => {
+    setLayouts(allLayouts);
+    localStorage.setItem(LS_LAYOUT, JSON.stringify(allLayouts));
+  };
 
-  // ── Handlers ───────────────────────────────────────────
-  async function handleConnectGoogle() {
-    setIsProvisioning(true);
-    try {
-      const id = await provisionDashboardSheet();
-      setSheetId(id);
-      setHasSheet(true);
-      fetchDashboard();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to provision template: ' + (err as Error).message);
-    } finally {
-      setIsProvisioning(false);
-    }
-  }
+  // Drag handle component wrapper
+  const Wrapper = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+    <div className={`flex flex-col h-full relative group ${className}`}>
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-50 bg-raised/90 backdrop-blur shadow-sm rounded-full px-3 py-1 drag-handle border border-edge flex items-center justify-center gap-1 cursor-grab active:cursor-grabbing">
+        <svg className="w-3.5 h-3.5 text-ink-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h16M4 16h16" />
+        </svg>
+      </div>
+      {children}
+    </div>
+  );
 
-  function setBacklog(tasks: BacklogTask[]) {
-    setData(prev => ({ ...prev, backlog: tasks }));
-  }
-
-  const fmtTime = time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  const fmtDate = time.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-  // ── Render ────────────────────────────────────────────
   return (
-    <div className={`min-h-screen bg-base text-ink ${isNight ? 'night' : ''} flex flex-col`}>
-
-      <TVMode
-        isOpen={tvMode}
-        onClose={() => setTvMode(false)}
-        schedule={data.schedule}
-        isNight={isNight}
-      />
-
-      <header className="sticky top-0 z-30 bg-base border-b-2 border-zinc-900 px-4 sm:px-6">
-        <div className="max-w-screen-2xl mx-auto flex items-center justify-between h-16 gap-3">
-          <div className="flex items-center gap-3 shrink-0">
-            <h1 className="text-lg font-black tracking-widest uppercase text-zinc-900 dark:text-zinc-50 hidden sm:block">Ambient Routine</h1>
+    <div className="min-h-screen flex flex-col no-theme-transition">
+      
+      {/* ── Navbar ── */}
+      <header className="flex items-center justify-between px-6 py-4 border-b-2 border-edge bg-base shrink-0 sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div className="w-8 h-8 rounded border-2 border-edge bg-raised flex items-center justify-center">
+            <svg className="w-4 h-4 text-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="square" strokeLinejoin="miter" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
           </div>
-          <div className="flex items-center gap-2 flex-1 overflow-x-auto px-4">
-            {!hasSheet ? (
-              <button
-                onClick={handleConnectGoogle}
-                disabled={isProvisioning}
-                className="btn-primary py-1.5 px-4 text-[10px] font-black uppercase tracking-widest bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50"
-              >
-                {isProvisioning ? 'Provisioning...' : 'Connect Google Account'}
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 px-3 py-1.5 border-2 border-emerald bg-emerald-wash text-emerald">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald animate-pulse-dot" />
-                <span className="text-[10px] font-black font-mono tracking-widest uppercase">
-                  Connected: {getSheetId()?.slice(0, 8)}...
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden lg:flex flex-col items-end leading-none mr-2">
-              <span className="text-sm font-black font-mono tracking-wider">{fmtTime}</span>
-              <span className="text-[10px] text-ink-3 uppercase font-bold tracking-widest mt-1">{fmtDate}</span>
-            </div>
-            <button onClick={() => setTvMode(true)} className="icon-btn gap-1.5 w-auto px-3" title="TV mode">
-              <span className="text-xs font-black uppercase tracking-widest">TV</span>
-            </button>
-            <button onClick={() => setIsNight(v => !v)} className="icon-btn px-3" title="Toggle night mode">
-              <span className="text-xs font-black uppercase tracking-widest">{isNight ? 'DAY' : 'NIGHT'}</span>
-            </button>
-            <button onClick={() => setSettingsOpen(true)} className="icon-btn px-3" title="Settings">
-              <span className="text-xs font-black uppercase tracking-widest">SET</span>
-            </button>
-          </div>
+          <h1 className="text-[13px] font-bold tracking-[0.2em] uppercase text-ink">Dashboard</h1>
         </div>
+        <nav className="flex items-center gap-6">
+          <button 
+            onClick={() => setIsDark(!isDark)}
+            className="w-8 h-8 rounded-full border border-edge bg-raised flex items-center justify-center text-ink-2 hover:text-amber transition-colors"
+            title="Toggle Day/Night Mode"
+          >
+            {isDark ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
+          <a href="#" className="text-xs font-bold tracking-widest text-ink-3 hover:text-ink transition-colors uppercase">Home</a>
+          <a href="#" className="text-xs font-bold tracking-widest text-ink transition-colors uppercase">Routine</a>
+          <button 
+            onClick={() => setSettingsOpen(true)}
+            className="text-xs font-bold tracking-widest text-ink-3 hover:text-ink transition-colors uppercase"
+          >
+            Settings
+          </button>
+        </nav>
       </header>
 
-      <div className="lg:hidden px-4 pt-4 pb-2">
-        <div className="card px-5 py-4 flex items-center justify-between border-2 border-zinc-900">
-          <div>
-            <p className="text-3xl font-black font-mono tracking-tighter leading-none">{fmtTime}</p>
-            <p className="text-xs text-ink-3 uppercase font-bold tracking-widest mt-1">{fmtDate}</p>
-          </div>
-        </div>
-      </div>
-
-      <main className="flex-1 w-full max-w-screen-2xl mx-auto p-4 md:p-6">
+      {/* ── Main Dashboard Grid ── */}
+      <main className="flex-1 p-6 relative overflow-x-hidden">
         
-        <div className="block md:hidden space-y-4">
-          {/* MOBILE: Single Column Stack */}
-          <div className="h-64"><TimelineBar schedule={data.schedule} onOpenSettings={() => setSettingsOpen(true)} /></div>
-          <div className="h-72"><TaskQueue /></div>
-          <div className="h-80"><AccountabilityBacklog backlog={data.backlog} metrics={data.metrics} onBacklogChange={setBacklog} /></div>
-          <div className="h-48"><TradingViewWidget /></div>
-          <div className="h-64"><QuickNotes /></div>
-          <div className="h-48"><DailyScripture onOpenSettings={() => setSettingsOpen(true)} /></div>
+        {/* MOBILE: Stack with dynamic heights */}
+        <div className="flex flex-col gap-4 md:hidden">
+          <div><TimelineBar schedule={data.schedule} onScheduleChange={handleScheduleChange} /></div>
+          <div><TaskQueue /></div>
+          <div><AccountabilityBacklog backlog={data.backlog} metrics={data.metrics} onBacklogChange={setBacklog} /></div>
+          <div><TradingViewWidget /></div>
+          <div><QuickNotes /></div>
+          <div><DailyScripture /></div>
+          <div><AmbientVideo youtubeUrl={youtubeUrl} show={showVideo} onToggle={() => setShowVideo(v => !v)} onOpenSettings={() => setSettingsOpen(true)} /></div>
         </div>
 
-        <div className="hidden md:grid grid-cols-12 gap-4 h-[calc(100vh-8rem)] min-h-[800px]">
-          {/* DESKTOP 16:9: Strict Layout */}
-          
-          <div className="col-span-3 flex flex-col gap-4">
-            <div className="flex-[3] min-h-0"><AccountabilityBacklog backlog={data.backlog} metrics={data.metrics} onBacklogChange={setBacklog} /></div>
-            <div className="flex-[2] min-h-0"><QuickNotes /></div>
-            <div className="flex-[2] min-h-0"><DailyScripture onOpenSettings={() => setSettingsOpen(true)} /></div>
-          </div>
+        {/* DESKTOP: React-Grid-Layout Drag & Drop Engine */}
+        <div className="hidden md:block">
+          <ResponsiveRGL
+            className="layout"
+            layouts={layouts}
+            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+            cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+            rowHeight={80}
+            onLayoutChange={handleLayoutChange}
+            draggableHandle=".drag-handle"
+            margin={[16, 16]}
+            isBounded={true}
+            compactType="vertical"
+            preventCollision={false}
+          >
+            <div key="backlog">
+              <Wrapper>
+                <AccountabilityBacklog backlog={data.backlog} metrics={data.metrics} onBacklogChange={setBacklog} />
+              </Wrapper>
+            </div>
+            
+            <div key="queue">
+              <Wrapper>
+                <TaskQueue />
+              </Wrapper>
+            </div>
 
-          <div className="col-span-6 flex flex-col gap-4">
-            <div className="flex-1 min-h-0"><TimelineBar schedule={data.schedule} onOpenSettings={() => setSettingsOpen(true)} /></div>
-            <div className="h-[200px] shrink-0"><TradingViewWidget /></div>
-          </div>
+            <div key="watchlist">
+              <Wrapper>
+                <TradingViewWidget />
+              </Wrapper>
+            </div>
 
-          <div className="col-span-3 flex flex-col gap-4">
-            <div className="flex-1 min-h-0"><TaskQueue /></div>
-          </div>
+            <div key="notes">
+              <Wrapper>
+                <QuickNotes />
+              </Wrapper>
+            </div>
+
+            <div key="scripture">
+              <Wrapper>
+                <DailyScripture />
+              </Wrapper>
+            </div>
+
+            <div key="ambient">
+              <Wrapper>
+                <AmbientVideo youtubeUrl={youtubeUrl} show={showVideo} onToggle={() => setShowVideo(v => !v)} onOpenSettings={() => setSettingsOpen(true)} />
+              </Wrapper>
+            </div>
+
+            <div key="timeline">
+              <Wrapper>
+                <TimelineBar schedule={data.schedule} onScheduleChange={handleScheduleChange} />
+              </Wrapper>
+            </div>
+          </ResponsiveRGL>
         </div>
       </main>
-      
-      {/* Off-screen audio engine */}
-      <AmbientVideo youtubeUrl={youtubeUrl} show={showVideo} onToggle={() => {}} onOpenSettings={() => {}} />
 
       <SettingsPanel
         isOpen={settingsOpen}

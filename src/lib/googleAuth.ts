@@ -3,7 +3,22 @@ export interface AuthSession {
   expiresAt: number;
 }
 
+const LS_SESSION_KEY = 'tycodes_auth_session';
+
 let currentSession: AuthSession | null = null;
+try {
+  const stored = localStorage.getItem(LS_SESSION_KEY);
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    if (Date.now() < parsed.expiresAt) {
+      currentSession = parsed;
+    } else {
+      localStorage.removeItem(LS_SESSION_KEY);
+    }
+  }
+} catch {
+  // ignore
+}
 let globalClientId = '';
 let globalScopes = '';
 
@@ -17,6 +32,11 @@ export function getAccessToken(): string | null {
     return currentSession.accessToken;
   }
   return null;
+}
+
+export function clearAuthSession() {
+  currentSession = null;
+  localStorage.removeItem(LS_SESSION_KEY);
 }
 
 export async function requestAccessToken(): Promise<string> {
@@ -40,6 +60,7 @@ export async function requestAccessToken(): Promise<string> {
           accessToken: resp.access_token,
           expiresAt: Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000
         };
+        localStorage.setItem(LS_SESSION_KEY, JSON.stringify(currentSession));
         resolve(resp.access_token);
       }
     });

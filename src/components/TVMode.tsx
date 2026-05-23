@@ -121,7 +121,7 @@ export default function TVMode({ isOpen, onClose, schedule, isNight }: Props) {
 
         {/* Left — Schedule ─────────────────────────────────── */}
         <div className="flex flex-col gap-4 justify-center">
-          <p className="section-label text-base tracking-widest">Today's Schedule</p>
+          <p className="section-label text-base tracking-wider">Today's Schedule</p>
 
           {activeBlock ? (
             <div
@@ -208,7 +208,7 @@ export default function TVMode({ isOpen, onClose, schedule, isNight }: Props) {
 
         {/* Right — Upcoming queue ──────────────────────────── */}
         <div className="flex flex-col gap-4 justify-center">
-          <p className="section-label text-base tracking-widest">Up Next</p>
+          <p className="section-label text-base tracking-wider">Up Next</p>
           {queue.filter(t => t.status === 'queued').length === 0 ? (
             <p className="text-lg text-ink-3">Queue is empty</p>
           ) : (

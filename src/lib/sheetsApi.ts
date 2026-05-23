@@ -40,7 +40,7 @@ export async function fetchDashboardData() {
   if (!token) return null;
 
   try {
-    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?ranges=ScheduleBlocks!A2:D&ranges=Backlog!A2:C&ranges=Metrics!A2:B`, {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?ranges=ScheduleBlocks!A4:D&ranges=Backlog!A4:C&ranges=Metrics!A4:B`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Fetch failed');
@@ -202,8 +202,8 @@ export async function updateSchedule(
   if (!token) return false;
 
   try {
-    // 1. Clear existing data (A2:D)
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/ScheduleBlocks!A2:D:clear`, {
+    // 1. Clear existing data (A4:D)
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/ScheduleBlocks!A4:D:clear`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -211,7 +211,7 @@ export async function updateSchedule(
     // 2. Append new blocks
     if (blocks.length > 0) {
       const values = blocks.map(b => [b.StartTime, b.EndTime, b.TaskName]);
-      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/ScheduleBlocks!A2:C:append?valueInputOption=USER_ENTERED`, {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/ScheduleBlocks!A4:C:append?valueInputOption=USER_ENTERED`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ values })
@@ -265,5 +265,81 @@ export async function updateMetric(key: string, value: string | number): Promise
     }
   } catch {
     return false;
+  }
+}
+
+// ── Portfolio actions ───────────────────────────────────────────
+
+/** Replaces the entire Portfolio sheet */
+export async function syncPortfolioToSheet(
+  assets: Array<{ ticker: string; shares: string; cost: string }>,
+): Promise<boolean> {
+  const sheetId = getSheetId();
+  if (!sheetId) return false;
+  const token = await getToken();
+  if (!token) return false;
+
+  try {
+    // 1. Clear ALL 4 columns including price formula column D
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Portfolio!A4:D:clear`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    // 2. Write new assets to a FIXED range (not :append) so row positions never drift
+    if (assets.length > 0) {
+      const values = assets.map((a) => {
+        const ticker = a.ticker.trim().toUpperCase();
+        return [
+          ticker,
+          a.shares || '0',
+          a.cost || '0',
+          `=IFERROR(GOOGLEFINANCE("${ticker}", "price"), "N/A")`
+        ];
+      });
+      // Use PUT to exact range so data always starts at row 4 with no gaps
+      const endRow = 4 + assets.length - 1;
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Portfolio!A4:D${endRow}?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values })
+      });
+      return res.ok;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Fetches evaluated live prices from the Portfolio sheet */
+export async function fetchPortfolioPrices(): Promise<Record<string, number> | null> {
+  const sheetId = getSheetId();
+  if (!sheetId) return null;
+  const token = await getToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Portfolio!A4:D?valueRenderOption=UNFORMATTED_VALUE`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const rows = data.values || [];
+    
+    const prices: Record<string, number> = {};
+    for (const r of rows) {
+      const ticker = r[0];
+      const rawPrice = r[3];
+      // Skip N/A or missing prices (GOOGLEFINANCE couldn't resolve the ticker)
+      if (!ticker || rawPrice === 'N/A' || rawPrice === undefined) continue;
+      const price = parseFloat(rawPrice);
+      if (!isNaN(price)) {
+        prices[ticker] = price;
+      }
+    }
+    return prices;
+  } catch {
+    return null;
   }
 }

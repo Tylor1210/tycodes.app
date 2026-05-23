@@ -65,7 +65,7 @@ export default function AccountabilityBacklog({ backlog, metrics, onBacklogChang
   const displayList = [...missed, ...pending, ...done].slice(0, 12);
 
   return (
-    <div className="card flex flex-col gap-0 overflow-hidden animate-fade-up">
+    <div className="card flex flex-col h-full gap-0 overflow-hidden animate-fade-up">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-edge shrink-0">
         <div className="flex items-center gap-2">
@@ -109,8 +109,8 @@ export default function AccountabilityBacklog({ backlog, metrics, onBacklogChang
               value={newName}
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addTask()}
-              placeholder="Task name…"
-              className="field flex-1 text-xs py-1.5"
+              placeholder="Ex: Submit corporate tax documentation..."
+              className="text-zinc-900 bg-zinc-100/80 font-medium px-3 py-2 rounded-lg w-full text-sm outline-none focus:ring-2 focus:ring-zinc-900"
             />
             <select
               id="task-status-select"
@@ -167,7 +167,7 @@ export default function AccountabilityBacklog({ backlog, metrics, onBacklogChang
             >
               <button
                 onClick={() => task.Status !== 'done' && markDone(task)}
-                className="w-4 h-4 rounded-full border-2 shrink-0 cursor-pointer flex items-center justify-center transition-all duration-200"
+                className="w-4 h-4 rounded-full border shrink-0 cursor-pointer flex items-center justify-center transition-all duration-200"
                 style={{ borderColor: cfg.dot, background: task.Status === 'done' ? cfg.dot : 'transparent' }}
                 aria-label="Mark done"
               >

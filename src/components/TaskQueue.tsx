@@ -169,7 +169,7 @@ export default function TaskQueue() {
   void tick;
 
   return (
-    <div className="card flex flex-col gap-0 overflow-hidden animate-fade-up delay-1">
+    <div className="card flex flex-col h-full overflow-hidden animate-fade-up delay-1">
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-edge shrink-0">
         <div className="flex items-center gap-2">

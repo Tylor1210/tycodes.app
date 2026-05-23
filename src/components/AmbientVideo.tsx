@@ -5,26 +5,49 @@ interface Props {
   onOpenSettings: () => void;
 }
 
-function extractId(input: string): string {
+function extractSrc(input: string): string {
   const t = input.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(t)) return t;
+
+  // Direct channel ID (24-char starting with UC)
+  if (/^UC[a-zA-Z0-9_-]{22}$/.test(t)) {
+    return `https://www.youtube.com/embed/live_stream?channel=${t}&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3`;
+  }
+
   try {
     const u = new URL(t);
-    if (u.hostname === 'youtu.be') return u.pathname.slice(1);
+
+    // youtube.com/channel/UCxxxx or youtube.com/channel/UCxxxx/live
+    const chanMatch = u.pathname.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+    if (chanMatch) {
+      return `https://www.youtube.com/embed/live_stream?channel=${chanMatch[1]}&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3`;
+    }
+
+    // Standard video embed
+    let videoId = '';
+    if (u.hostname === 'youtu.be') videoId = u.pathname.slice(1);
     const v = u.searchParams.get('v');
-    if (v) return v;
+    if (v) videoId = v;
     const m = u.pathname.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
-    if (m) return m[1];
+    if (m) videoId = m[1];
+
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0`;
+    }
   } catch { /* fall through */ }
-  return t;
+
+  // Bare video ID fallback (11 chars)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(t)) {
+    return `https://www.youtube.com/embed/${t}?autoplay=1&mute=1&loop=1&playlist=${t}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0`;
+  }
+
+  return t; // passthrough
 }
 
 export default function AmbientVideo({ youtubeUrl, show, onToggle, onOpenSettings }: Props) {
-  const id = extractId(youtubeUrl);
-  const src = `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0`;
+  const src = extractSrc(youtubeUrl);
 
   return (
-    <div className="card flex flex-col gap-0 overflow-hidden animate-fade-up delay-4">
+    <div className="card flex flex-col h-full gap-0 overflow-hidden animate-fade-up delay-4">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-4 shrink-0">
         <div className="flex items-center gap-2">
@@ -62,18 +85,16 @@ export default function AmbientVideo({ youtubeUrl, show, onToggle, onOpenSetting
       </div>
 
       {/* Video */}
-      <div className="w-0 h-0 absolute opacity-0 pointer-events-none">
-        {show && (
-          <iframe
-            key={id}
-            title="Ambient Media"
-            src={src}
-            className="w-full h-full"
-            allow="autoplay; encrypted-media"
-            style={{ border: 'none' }}
-            sandbox="allow-scripts allow-same-origin allow-presentation"
-          />
-        )}
+      <div className={show ? "w-full h-[150px] relative opacity-100 mt-2" : "w-0 h-0 absolute opacity-0 pointer-events-none"}>
+        <iframe
+          key={src}
+          title="Ambient Media"
+          src={src}
+          className="w-full h-full rounded-b-xl"
+          allow="autoplay; encrypted-media"
+          style={{ border: 'none' }}
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+        />
       </div>
     </div>
   );

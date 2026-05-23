@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
 
 /* ============================================================
    DESIGN TOKENS — Apple × Anthropic
@@ -47,83 +49,87 @@
 }
 
 /* ============================================================
-   LIGHT MODE — Brutalist Command Center
+   NIGHT MODE (DEFAULT) — Sunsety (Deep Purple/Orange/Red)
    ============================================================ */
 :root {
-  --base:    #F4F4F5; /* zinc-100 */
-  --card:    #FFFFFF;
-  --raised:  #E4E4E7; /* zinc-200 */
-  --input:   #D4D4D8; /* zinc-300 */
-  --edge:    #09090B; /* zinc-950 - strict bold borders */
-  --edge-hi: #09090B;
-
-  --ink:   #09090B;
-  --ink-2: #27272A;
-  --ink-3: #52525B;
-
-  --shadow-card:  none;
-  --shadow-hover: 4px 4px 0px 0px rgba(9, 9, 11, 1);
-  --shadow-float: 8px 8px 0px 0px rgba(9, 9, 11, 1);
-
-  --amber:        #92400E;
-  --amber-wash:   rgba(146, 64, 14, 0.08);
-  --amber-edge:   rgba(146, 64, 14, 0.18);
-
-  --emerald:      #065F46;
-  --emerald-wash: rgba(6, 95, 70, 0.08);
-  --emerald-edge: rgba(6, 95, 70, 0.18);
-
-  --rose:         #9F1239;
-  --rose-wash:    rgba(159, 18, 57, 0.08);
-  --rose-edge:    rgba(159, 18, 57, 0.18);
-
-  --indigo:       #3730A3;
-  --indigo-wash:  rgba(55, 48, 163, 0.07);
-  --indigo-edge:  rgba(55, 48, 163, 0.16);
-
-  --violet: #5B21B6;
-  --sky:    #0369A1;
-  --cyan:   #0E7490;
-}
-
-/* ============================================================
-   NIGHT MODE — Deep Brutalist
-   ============================================================ */
-.night {
-  --base:    #09090B; /* zinc-950 */
-  --card:    #09090B;
-  --raised:  #18181B; /* zinc-900 */
-  --input:   #27272A; /* zinc-800 */
-  --edge:    #52525B; /* zinc-600 */
-  --edge-hi: #A1A1AA; /* zinc-400 */
+  --base:    #0a0508; /* Deep dark purple/black */
+  --card:    #160c14; /* Dark purple/brown card */
+  --raised:  #241520; 
+  --input:   #341c2c; 
+  --edge:    #3f2235; 
+  --edge-hi: #562e48;
 
   --ink:   #FAFAFA;
-  --ink-2: #A1A1AA;
-  --ink-3: #71717A;
+  --ink-2: #d4a5c4;
+  --ink-3: #9b728d;
 
-  --shadow-card:  none;
-  --shadow-hover: 4px 4px 0px 0px rgba(82, 82, 91, 1);
-  --shadow-float: 8px 8px 0px 0px rgba(82, 82, 91, 1);
+  --shadow-card:  0 1px 3px 0 rgb(0 0 0 / 0.5);
+  --shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.6);
+  --shadow-float: 0 10px 15px -3px rgb(0 0 0 / 0.7);
 
-  --amber:        #F59E0B;
-  --amber-wash:   rgba(245, 158, 11, 0.12);
-  --amber-edge:   rgba(245, 158, 11, 0.22);
+  --amber:        #f97316; /* sunset orange */
+  --amber-wash:   rgba(249, 115, 22, 0.12);
+  --amber-edge:   rgba(249, 115, 22, 0.22);
 
   --emerald:      #10B981;
   --emerald-wash: rgba(16, 185, 129, 0.10);
   --emerald-edge: rgba(16, 185, 129, 0.22);
 
-  --rose:         #FB7185;
-  --rose-wash:    rgba(251, 113, 133, 0.10);
-  --rose-edge:    rgba(251, 113, 133, 0.22);
+  --rose:         #f43f5e; /* sunset red/rose */
+  --rose-wash:    rgba(244, 63, 94, 0.10);
+  --rose-edge:    rgba(244, 63, 94, 0.22);
 
-  --indigo:       #818CF8;
-  --indigo-wash:  rgba(129, 140, 248, 0.10);
-  --indigo-edge:  rgba(129, 140, 248, 0.22);
+  --indigo:       #a855f7; /* sunset purple */
+  --indigo-wash:  rgba(168, 85, 247, 0.10);
+  --indigo-edge:  rgba(168, 85, 247, 0.22);
 
-  --violet: #A78BFA;
+  --violet: #d946ef;
   --sky:    #38BDF8;
   --cyan:   #22D3EE;
+
+  --glow-color: rgba(249, 115, 22, 0.08); /* Orange glow */
+  --glow-hover: rgba(244, 63, 94, 0.20); /* Reddish hover glow */
+}
+
+/* Optional Light Mode - Sunrisey */
+.light {
+  --base:    #fffdfa; /* Warm sunrise white */
+  --card:    #ffffff;
+  --raised:  #fff7ed; /* orange-50 */
+  --input:   #ffedd5; /* orange-100 */
+  --edge:    #fed7aa; /* orange-200 */
+  --edge-hi: #fdba74; /* orange-300 */
+
+  --ink:   #431407; /* Deep brown/orange */
+  --ink-2: #7c2d12;
+  --ink-3: #9a3412;
+
+  --shadow-card:  0 4px 6px -1px rgb(249 115 22 / 0.05);
+  --shadow-hover: 0 10px 15px -3px rgb(249 115 22 / 0.1);
+  --shadow-float: 0 20px 25px -5px rgb(249 115 22 / 0.15);
+
+  --amber:        #ea580c;
+  --amber-wash:   rgba(234, 88, 12, 0.12);
+  --amber-edge:   rgba(234, 88, 12, 0.25);
+
+  --emerald:      #059669;
+  --emerald-wash: rgba(5, 150, 105, 0.10);
+  --emerald-edge: rgba(5, 150, 105, 0.22);
+
+  --rose:         #e11d48;
+  --rose-wash:    rgba(225, 29, 72, 0.10);
+  --rose-edge:    rgba(225, 29, 72, 0.22);
+
+  --indigo:       #7e22ce;
+  --indigo-wash:  rgba(126, 34, 206, 0.10);
+  --indigo-edge:  rgba(126, 34, 206, 0.22);
+
+  --violet: #a21caf;
+  --sky:    #0284c7;
+  --cyan:   #0891b2;
+
+  --glow-color: rgba(251, 146, 60, 0.15); /* Sunrise orange glow */
+  --glow-hover: rgba(251, 146, 60, 0.35);
 }
 
 /* ============================================================
@@ -144,6 +150,8 @@ html {
 body {
   font-family: var(--font-sans);
   background-color: var(--base);
+  background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
   color: var(--ink);
   line-height: 1.5;
 }
@@ -188,9 +196,18 @@ input[type="number"] { -moz-appearance: textfield; }
    ============================================================ */
 .card {
   background: var(--card);
-  border: 2px solid var(--edge);
-  border-radius: 0px;
+  border: 1px solid var(--edge);
+  border-top: 2px solid var(--ink-3);
+  border-radius: 16px;
   box-shadow: var(--shadow-card);
+  /* The warm glow aesthetic */
+  box-shadow: 0 0 15px var(--glow-color);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--amber-edge);
+  box-shadow: 0 0 20px var(--glow-hover);
 }
 
 .card-interactive {
@@ -198,8 +215,53 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: box-shadow 0.2s ease, transform 0.2s ease !important;
 }
 .card-interactive:hover {
-  box-shadow: var(--shadow-hover);
+  box-shadow: 0 0 25px var(--glow-hover);
   transform: translateY(-1px);
+}
+
+/* React Grid Layout Overrides */
+.react-grid-item.react-grid-placeholder {
+  background: var(--amber) !important;
+  opacity: 0.1 !important;
+  border-radius: 16px;
+}
+.react-grid-item > .react-resizable-handle {
+  opacity: 0.5; /* Always slightly visible */
+  transition: opacity 0.2s;
+  z-index: 50; /* Ensure it stays above .card */
+  background-color: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  width: 14px;
+  height: 14px;
+  right: 8px;
+  bottom: 8px;
+  background-image: none !important; /* override default */
+}
+.react-grid-item > .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--ink-2);
+  border-bottom: 2px solid var(--ink-2);
+}
+.react-grid-item:hover > .react-resizable-handle {
+  opacity: 1;
+  background-color: var(--amber);
+  border-color: var(--amber-edge);
+}
+.react-grid-item:hover > .react-resizable-handle::after {
+  border-color: var(--base);
+}
+/* Drag handle specifically styling */
+.drag-handle {
+  cursor: grab;
+}
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 /* ============================================================
@@ -226,7 +288,8 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
 }
 
 .pill-amber   { background: var(--amber-wash);   color: var(--amber);   border-color: var(--amber-edge); }
@@ -246,10 +309,10 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 0px;
-  border: 2px solid var(--edge);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--edge);
   background: var(--raised);
   color: var(--ink-2);
   cursor: pointer;
@@ -267,8 +330,8 @@ input[type="number"] { -moz-appearance: textfield; }
 .field {
   width: 100%;
   padding: 8px 12px;
-  border-radius: 0px;
-  border: 2px solid var(--edge);
+  border-radius: 8px;
+  border: 1px solid var(--edge);
   background: var(--input);
   color: var(--ink);
   font-family: var(--font-sans);
@@ -291,7 +354,7 @@ input[type="number"] { -moz-appearance: textfield; }
   justify-content: center;
   gap: 6px;
   padding: 8px 16px;
-  border-radius: 0px;
+  border-radius: 8px;
   background: var(--ink);
   color: var(--card);
   font-size: 13px;
@@ -309,12 +372,12 @@ input[type="number"] { -moz-appearance: textfield; }
   justify-content: center;
   gap: 6px;
   padding: 7px 14px;
-  border-radius: 0px;
+  border-radius: 8px;
   background: transparent;
   color: var(--ink-2);
   font-size: 13px;
-  font-weight: 700;
-  border: 2px solid var(--edge);
+  font-weight: 600;
+  border: 1px solid var(--edge);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease !important;
 }

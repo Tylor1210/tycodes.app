@@ -58,7 +58,7 @@ export default function QuickNotes() {
   }
 
   return (
-    <div className="card flex flex-col gap-0 overflow-hidden animate-fade-up delay-2">
+    <div className="card w-full h-full flex-1 flex flex-col gap-0 overflow-hidden animate-fade-up delay-2">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
         <div className="flex items-center gap-2">
